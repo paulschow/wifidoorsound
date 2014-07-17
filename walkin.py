@@ -148,7 +148,7 @@ def do_one(dest_addr, timeout):
     return delay
 
 # From ping.py
-def verbose_ping(dest_addr, pin, timeout = 2, count = 1):
+def verbose_ping(dest_addr, timeout = 2, count = 1):
     """
     Send >count< ping to >dest_addr< with the given >timeout< and display
     the result.
@@ -159,22 +159,23 @@ def verbose_ping(dest_addr, pin, timeout = 2, count = 1):
             delay  =  do_one(dest_addr, timeout)
         except socket.gaierror, e:
             print "failed. (socket error: '%s')" % e[1]
-            log.write('%s,socketerr\n' % ((strftime("%H:%M"))))
+            #log.write('%s,socketerr\n' % ((strftime("%H:%M"))))
             #led_off(pin)
+            return 0  # Return a 0 if there's an error'
             break
-
         if delay  ==  None:
             print "failed. (timeout within %ssec.)" % timeout
-            log.write('%s,%s,timeout\n' % (strftime("%H:%M"), dest_addr))
+            #log.write('%s,%s,timeout\n' % (strftime("%H:%M"), dest_addr))
             # write to log
             #led_off(pin)
+            return 0  # Return a 0 if they're not here'
         else:
             delay = delay * 1000
             print "get ping in %0.4fms" % delay
-            log.write('%s,%s,%0.4f\n' % (strftime("%H:%M"), dest_addr, delay))
+            #log.write('%s,%s,%0.4f\n' % (strftime("%H:%M"), dest_addr, delay))
             # write to log
             #led_on(pin)
-    print
+            return 1  # Return a 1 if the person is here
 
 # function for marking someone as gone in the db
 def db_gone(id):
@@ -196,18 +197,46 @@ if __name__ == '__main__':
     counter = 0
     #Loop for awhile
     while counter < 14400:
-        search = 1  # 1 is the last marker
-        query = "SELECT * FROM gone WHERE last=? ORDER BY {0}".format('Last')
-        c.execute(query, (search,))
-        for row in c:
-            print row
-            print 'Last person was:', row[4]
-            print 'MP3 file is:', row[3]
-            pygame.mixer.music.load(row[3])  # load the file for the person
-            pygame.mixer.music.play()  # play the loaded file
+        c.execute("SELECT * FROM gone")
+        rows = c.fetchall()
+        countrow = len(rows)  # Counts the number of rows
+        print "Number of Rows:", countrow
+        x = countrow
+        for row in rows:
+            print row[5]
+            status = verbose_ping(row[5])  # ping the IP, get status
+            # 1 is here, 0 is gone or error
+            print status
+            if status == 1:
+                #print "They're here!"
+                print "Here"
+                # I'm just making this play music for fun
+                print 'MP3 file is:', row[3]
+                pygame.mixer.music.load(row[3])  # load the file for the person
+                pygame.mixer.music.play()  # play the loaded file
+                time.sleep(10)
+                #TODO make this update the db
+            else:
+                #print "Not Here"
+                print "Not Here"
+            print " "
+            #print rows
+            #print len(row)
+            #print x
+
+        #search = 1  # 1 is the last marker
+        #query = "SELECT * FROM gone WHERE last=? ORDER BY {0}".format('Last')
+        #c.execute(query, (search,))
+        #for row in c:
+            #print row
+            #print 'Last person was:', row[4]
+            #print 'MP3 file is:', row[3]
+            #pygame.mixer.music.load(row[3])  # load the file for the person
+            #pygame.mixer.music.play()  # play the loaded file
         #verbose_ping("192.168.1.5",11) #W
         #verbose_ping("192.168.1.24",9) #T
         #verbose_ping("192.168.1.12",8) #L
         #verbose_ping("192.168.1.26",25) #P
         counter = counter + 1
+        print "done"
         time.sleep(10)
