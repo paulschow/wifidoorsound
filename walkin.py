@@ -66,6 +66,7 @@ def checksum(source_string):
 
     return answer
 
+
 # From ping.py
 def receive_one_ping(my_socket, ID, timeout):
     """
@@ -94,6 +95,7 @@ def receive_one_ping(my_socket, ID, timeout):
         if timeLeft <= 0:
             return
 
+
 # From ping.py
 def send_one_ping(my_socket, dest_addr, ID):
     """
@@ -121,6 +123,7 @@ def send_one_ping(my_socket, dest_addr, ID):
     packet = header + data
     my_socket.sendto(packet, (dest_addr, 1)) # Don't know about the 1
 
+
 # From ping.py
 def do_one(dest_addr, timeout):
     """
@@ -146,6 +149,7 @@ def do_one(dest_addr, timeout):
 
     my_socket.close()
     return delay
+
 
 # From ping.py
 def verbose_ping(dest_addr, timeout = 2, count = 1):
@@ -177,11 +181,23 @@ def verbose_ping(dest_addr, timeout = 2, count = 1):
             #led_on(pin)
             return 1  # Return a 1 if the person is here
 
+
 # function for marking someone as gone in the db
-def db_gone(id):
-    print 'test'
+def db_gone(keyid):
+    print "key = %d" % keyid
+    #c.execute("SELECT * FROM gone")
+    c.execute("UPDATE gone SET Status = 0 WHERE key = %d" % keyid)
+    conn.commit()
+    #print "Total number of rows updated :", conn.total_changes
 
 
+def db_here(keyid):
+    print "key = %d" % keyid
+    #c.execute("SELECT * FROM gone")
+    c.execute("UPDATE gone SET Status = 1 WHERE key = %d" % keyid)
+    conn.commit()
+    #print "Total number of rows updated :", conn.total_changes
+    #conn.close
 
 #def led_on(pin):
 #    GPIO.output(pin,GPIO.HIGH)
@@ -196,7 +212,7 @@ def db_gone(id):
 if __name__ == '__main__':
     counter = 0
     #Loop for awhile
-    while counter < 14400:
+    while counter < 20:
         c.execute("SELECT * FROM gone")
         rows = c.fetchall()
         countrow = len(rows)  # Counts the number of rows
@@ -206,19 +222,25 @@ if __name__ == '__main__':
             print row[5]
             status = verbose_ping(row[5])  # ping the IP, get status
             # 1 is here, 0 is gone or error
-            print status
+            print "status is %s" % status
             if status == 1:
                 #print "They're here!"
                 print "Here"
                 # I'm just making this play music for fun
-                print 'MP3 file is:', row[3]
-                pygame.mixer.music.load(row[3])  # load the file for the person
-                pygame.mixer.music.play()  # play the loaded file
-                time.sleep(10)
-                #TODO make this update the db
+                #print 'MP3 file is:', row[3]
+                #pygame.mixer.music.load(row[3])  # load the file for the person
+                #pygame.mixer.music.play()  # play the loaded file
+                #time.sleep(10)
+                # Send the row to db_here
+                db_here(row[0])
+                #conn.execute("UPDATE gone SET Status = 1 WHERE key = 4")
+                #conn.commit
+                #print "Total number of rows updated :", conn.total_changes
             else:
                 #print "Not Here"
+                # Send the row to db_gone
                 print "Not Here"
+                db_gone(row[0])
             print " "
             #print rows
             #print len(row)
@@ -239,4 +261,5 @@ if __name__ == '__main__':
         #verbose_ping("192.168.1.26",25) #P
         counter = counter + 1
         print "done"
-        time.sleep(10)
+        #time.sleep(10)
+        #conn.close
