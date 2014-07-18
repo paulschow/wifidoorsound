@@ -11,7 +11,7 @@
 
 
 import os, sys, socket, struct, select, time, sqlite3, pygame
-from time import strftime
+#from time import strftime
 #import RPi.GPIO as GPIO #import GPIO
 
 #GPIO.setmode(GPIO.BCM) #set mode BCM
@@ -43,22 +43,22 @@ def checksum(source_string):
     I'm not too confident that this is right but testing seems
     to suggest that it gives the same answers as in_cksum in ping.c
     """
-    sum = 0
-    countTo = (len(source_string)/2)*2
+    nsum = 0
+    countTo = (len(source_string) / 2) * 2
     count = 0
-    while count<countTo:
+    while count < countTo:
         thisVal = ord(source_string[count + 1])*256 + ord(source_string[count])
-        sum = sum + thisVal
-        sum = sum & 0xffffffff # Necessary?
+        nsum = nsum + thisVal
+        nsum = nsum & 0xffffffff  # Necessary?
         count = count + 2
 
-    if countTo<len(source_string):
-        sum = sum + ord(source_string[len(source_string) - 1])
-        sum = sum & 0xffffffff # Necessary?
+    if countTo < len(source_string):
+        nsum = nsum + ord(source_string[len(source_string) - 1])
+        nsum = nsum & 0xffffffff  # Necessary?
 
-    sum = (sum >> 16)  +  (sum & 0xffff)
-    sum = sum + (sum >> 16)
-    answer = ~sum
+    nsum = (nsum >> 16) + (nsum & 0xffff)
+    nsum = nsum + (nsum >> 16)
+    answer = ~nsum
     answer = answer & 0xffff
 
     # Swap bytes. Bugger me if I know why.
@@ -101,7 +101,7 @@ def send_one_ping(my_socket, dest_addr, ID):
     """
     Send one ping to the given >dest_addr<.
     """
-    dest_addr  =  socket.gethostbyname(dest_addr)
+    dest_addr = socket.gethostbyname(dest_addr)
 
     # Header is type (8), code (8), checksum (16), id (16), sequence (16)
     my_checksum = 0
@@ -121,7 +121,7 @@ def send_one_ping(my_socket, dest_addr, ID):
         "bbHHh", ICMP_ECHO_REQUEST, 0, socket.htons(my_checksum), ID, 1
     )
     packet = header + data
-    my_socket.sendto(packet, (dest_addr, 1)) # Don't know about the 1
+    my_socket.sendto(packet, (dest_addr, 1))  # Don't know about the 1
 
 
 # From ping.py
@@ -160,14 +160,14 @@ def verbose_ping(dest_addr, timeout = 2, count = 1):
     for i in xrange(count):
         print "ping %s..." % dest_addr,
         try:
-            delay  =  do_one(dest_addr, timeout)
+            delay = do_one(dest_addr, timeout)
         except socket.gaierror, e:
             print "failed. (socket error: '%s')" % e[1]
             #log.write('%s,socketerr\n' % ((strftime("%H:%M"))))
             #led_off(pin)
             return 0  # Return a 0 if there's an error'
             break
-        if delay  ==  None:
+        if delay is None:
             print "failed. (timeout within %ssec.)" % timeout
             #log.write('%s,%s,timeout\n' % (strftime("%H:%M"), dest_addr))
             # write to log
@@ -187,17 +187,36 @@ def db_gone(keyid):
     print "key = %d" % keyid
     #c.execute("SELECT * FROM gone")
     c.execute("UPDATE gone SET Status = 0 WHERE key = %d" % keyid)
-    conn.commit()
+    conn.commit()  # commit changes to the db
     #print "Total number of rows updated :", conn.total_changes
 
 
-def db_here(keyid):
+def db_here(keyid, prestatus, song):
     print "key = %d" % keyid
+    print "Previous Status is  = %d" % prestatus
+    if prestatus == 0:
+        # They just showed up!
+        print '\033[1;36m Person Arrived \033[00m'
+        # Set everyone else to not last
+        c.execute("UPDATE gone SET Last = 0 WHERE key != %d" % keyid)
+        # Set them as the last person
+        c.execute("UPDATE gone SET Last = 1 WHERE key = %d" % keyid)
+        conn.commit()  # commit changes to the db
+        # Let's play their song
+        #print 'MP3 file is:', song
+        #pygame.mixer.music.load(song)  # load the file for the person
+        #pygame.mixer.music.play()  # play the loaded file
+        #time.sleep(30)
+        #pygame.mixer.music.stop()
+        #while pygame.mixer.music.get_busy():
+        #    pygame.time.Clock().tick(0)
+    else:
+        print "They were already here"
+
     #c.execute("SELECT * FROM gone")
     c.execute("UPDATE gone SET Status = 1 WHERE key = %d" % keyid)
-    conn.commit()
+    conn.commit()  # commit changes to the db
     #print "Total number of rows updated :", conn.total_changes
-    #conn.close
 
 #def led_on(pin):
 #    GPIO.output(pin,GPIO.HIGH)
@@ -212,7 +231,7 @@ def db_here(keyid):
 if __name__ == '__main__':
     counter = 0
     #Loop for awhile
-    while counter < 20:
+    while counter < 50:
         c.execute("SELECT * FROM gone")
         rows = c.fetchall()
         countrow = len(rows)  # Counts the number of rows
@@ -226,25 +245,14 @@ if __name__ == '__main__':
             if status == 1:
                 #print "They're here!"
                 print "Here"
-                # I'm just making this play music for fun
-                #print 'MP3 file is:', row[3]
-                #pygame.mixer.music.load(row[3])  # load the file for the person
-                #pygame.mixer.music.play()  # play the loaded file
-                #time.sleep(10)
                 # Send the row to db_here
-                db_here(row[0])
-                #conn.execute("UPDATE gone SET Status = 1 WHERE key = 4")
-                #conn.commit
+                db_here(row[0], row[2], row[3])
                 #print "Total number of rows updated :", conn.total_changes
             else:
                 #print "Not Here"
                 # Send the row to db_gone
                 print "Not Here"
                 db_gone(row[0])
-            print " "
-            #print rows
-            #print len(row)
-            #print x
 
         #search = 1  # 1 is the last marker
         #query = "SELECT * FROM gone WHERE last=? ORDER BY {0}".format('Last')
