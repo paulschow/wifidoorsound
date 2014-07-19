@@ -212,14 +212,14 @@ if __name__ == '__main__':
         print "Number of Rows:", countrow
         x = countrow
         for row in rows:
-            print "IP = %s" % row[5]
+            #print "IP = %s" % row[5]
             #print "Name = %s" % row[4]
             status = verbose_ping(row[5])  # ping the IP, get status
             # 1 is here, 0 is gone or error
             #print "status is %s" % status
             if status == 1:
                 #print "They're here!"
-                print "\033[94m %s is  Here \033[00m" % row[4]
+                print "\033[94m %s is Here \033[00m" % row[4]
                 # Send the row to db_here
                 db_here(row[0], row[2], row[3])
                 print " "
@@ -227,8 +227,8 @@ if __name__ == '__main__':
             else:
                 #print "Not Here"
                 # Send the row to db_gone
-                print "\033[91m %s is  Not Here \033[00m" % row[4]
+                print "\033[91m %s is Not Here \033[00m" % row[4]
                 print " "
                 db_gone(row[0])
         counter = counter + 1
-        print "done \n"
+        print "\033[33m Done \033[00m \n"
