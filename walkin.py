@@ -9,24 +9,18 @@
 
 # Note: Requires sqlite3 I think
 
+import os
+import socket
+import struct
+import select
+import time
+import sqlite3
 
-import os, sys, socket, struct, select, time, sqlite3, pygame
-#from time import strftime
-#import RPi.GPIO as GPIO #import GPIO
-
-#GPIO.setmode(GPIO.BCM) #set mode BCM
-#GPIO.setup(11, GPIO.OUT) #Use pin 11
-#GPIO.setup(9, GPIO.OUT) #Use pin 9
-#GPIO.setup(8, GPIO.OUT) #Use pin 11
-#GPIO.setup(25, GPIO.OUT) #Use pin 9
 
 # connect to the database
 conn = sqlite3.connect('gone.db')
 # the cursor is c
 c = conn.cursor()
-
-# initalize pygame mixer for audio
-pygame.mixer.init()
 
 # From ping.py
 # From /usr/include/linux/icmp.h; your milage may vary.
@@ -164,27 +158,24 @@ def verbose_ping(dest_addr, timeout = 2, count = 1):
         except socket.gaierror, e:
             print "failed. (socket error: '%s')" % e[1]
             #log.write('%s,socketerr\n' % ((strftime("%H:%M"))))
-            #led_off(pin)
             return 0  # Return a 0 if there's an error'
             break
         if delay is None:
             print "failed. (timeout within %ssec.)" % timeout
             #log.write('%s,%s,timeout\n' % (strftime("%H:%M"), dest_addr))
             # write to log
-            #led_off(pin)
             return 0  # Return a 0 if they're not here'
         else:
             delay = delay * 1000
             print "get ping in %0.4fms" % delay
             #log.write('%s,%s,%0.4f\n' % (strftime("%H:%M"), dest_addr, delay))
             # write to log
-            #led_on(pin)
             return 1  # Return a 1 if the person is here
 
 
 # function for marking someone as gone in the db
 def db_gone(keyid):
-    print "key = %d" % keyid
+    #print "key = %d" % keyid
     #c.execute("SELECT * FROM gone")
     c.execute("UPDATE gone SET Status = 0 WHERE key = %d" % keyid)
     conn.commit()  # commit changes to the db
@@ -192,24 +183,16 @@ def db_gone(keyid):
 
 
 def db_here(keyid, prestatus, song):
-    print "key = %d" % keyid
-    print "Previous Status is  = %d" % prestatus
+    #print "key = %d" % keyid
+    #print "Previous Status is  = %d" % prestatus
     if prestatus == 0:
         # They just showed up!
-        print '\033[1;36m Person Arrived \033[00m'
+        print '\033[1;32m Person Arrived \033[00m'
         # Set everyone else to not last
         c.execute("UPDATE gone SET Last = 0 WHERE key != %d" % keyid)
         # Set them as the last person
         c.execute("UPDATE gone SET Last = 1 WHERE key = %d" % keyid)
         conn.commit()  # commit changes to the db
-        # Let's play their song
-        #print 'MP3 file is:', song
-        #pygame.mixer.music.load(song)  # load the file for the person
-        #pygame.mixer.music.play()  # play the loaded file
-        #time.sleep(30)
-        #pygame.mixer.music.stop()
-        #while pygame.mixer.music.get_busy():
-        #    pygame.time.Clock().tick(0)
     else:
         print "They were already here"
 
@@ -217,15 +200,6 @@ def db_here(keyid, prestatus, song):
     c.execute("UPDATE gone SET Status = 1 WHERE key = %d" % keyid)
     conn.commit()  # commit changes to the db
     #print "Total number of rows updated :", conn.total_changes
-
-#def led_on(pin):
-#    GPIO.output(pin,GPIO.HIGH)
-#    print "LED %d ON" % (pin)
-
-
-#def led_off(pin):
-#    GPIO.output(pin,GPIO.LOW)
-#    print "LED %d OFF" % (pin)
 
 #Main loop
 if __name__ == '__main__':
@@ -238,36 +212,23 @@ if __name__ == '__main__':
         print "Number of Rows:", countrow
         x = countrow
         for row in rows:
-            print row[5]
+            print "IP = %s" % row[5]
+            #print "Name = %s" % row[4]
             status = verbose_ping(row[5])  # ping the IP, get status
             # 1 is here, 0 is gone or error
-            print "status is %s" % status
+            #print "status is %s" % status
             if status == 1:
                 #print "They're here!"
-                print "Here"
+                print "\033[94m %s is  Here \033[00m" % row[4]
                 # Send the row to db_here
                 db_here(row[0], row[2], row[3])
+                print " "
                 #print "Total number of rows updated :", conn.total_changes
             else:
                 #print "Not Here"
                 # Send the row to db_gone
-                print "Not Here"
+                print "\033[91m %s is  Not Here \033[00m" % row[4]
+                print " "
                 db_gone(row[0])
-
-        #search = 1  # 1 is the last marker
-        #query = "SELECT * FROM gone WHERE last=? ORDER BY {0}".format('Last')
-        #c.execute(query, (search,))
-        #for row in c:
-            #print row
-            #print 'Last person was:', row[4]
-            #print 'MP3 file is:', row[3]
-            #pygame.mixer.music.load(row[3])  # load the file for the person
-            #pygame.mixer.music.play()  # play the loaded file
-        #verbose_ping("192.168.1.5",11) #W
-        #verbose_ping("192.168.1.24",9) #T
-        #verbose_ping("192.168.1.12",8) #L
-        #verbose_ping("192.168.1.26",25) #P
         counter = counter + 1
-        print "done"
-        #time.sleep(10)
-        #conn.close
+        print "done \n"
