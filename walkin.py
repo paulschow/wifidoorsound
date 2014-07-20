@@ -205,7 +205,7 @@ def db_here(keyid, prestatus, song):
 if __name__ == '__main__':
     counter = 0
     #Loop for awhile
-    while counter < 50:
+    while True:
         c.execute("SELECT * FROM gone")
         rows = c.fetchall()
         countrow = len(rows)  # Counts the number of rows
