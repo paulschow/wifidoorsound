@@ -4,13 +4,15 @@
 ### What is this repository for? ###
 
 * Doorsound
-* Uses wifi to tell when someone gets home, then plays a sound when they walk in the door
+* Uses bluetooth to tell when someone gets home, then plays a sound when they walk in the door
 
 ### How do I get set up? ###
 
-* Made for Raspberry Pi
+* Get Raspberry Pi
 * Clone files
-* Use a sqlite db editor to change the database
-* Attach infrared sensor to GPIO pins
-* Run walkin.py to start the pinging
+* Pair bluetooth devices
+* Use a sqlite db editor to change the macs.db
+* Add their MAC addresses into macs.db with a song
+* Attach reed switch to GPIO pin 14
+* Run bluepinger.py to start the pinging
 * Run doorcheck.py monitor the door
