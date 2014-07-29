@@ -16,6 +16,8 @@ import sqlite3
 import subprocess
 import re
 import bluetooth
+import multiprocessing
+
 
 # connect to the database
 conn = sqlite3.connect('macs.db')
@@ -32,17 +34,39 @@ DEFAULT_TIMEOUT = 1
 def newping(btaddr):
 # Adapted from
 # https://github.com/jeffbryner/bluetoothscreenlock
+# Basically just tries to connect to the device
+# And reports if it is there or not
     btsocket = bluetooth.BluetoothSocket(bluetooth.L2CAP)
-    print("searching for device...")
+    #print("searching for device..."), btaddr
     try:
         btsocket.connect((btaddr, 3))
         if btsocket.send("hey"):
-            print("found device..")
+            #print("Device Found")
+            gstatus.value = 1
             return 1
             btsocket.close()
     except bluetooth.btcommon.BluetoothError:
-        print("no device...")
+        print("Bluetooth Error. Is device paired?")
+        gstatus.value = 0
         return 0
+
+
+def pingtimer(mac):
+# This is a pretty awful use of multiprocessing to time the pings
+# But it works pretty well
+# Maybe later I will use pools or something
+    p = multiprocessing.Process(target=newping, name="ping", args=(mac,))
+    p.start()
+    p.join(3)  # Timeout after seconds
+    #print result
+    # Wait 10 seconds for foo
+    #time.sleep(1)
+    if p.is_alive():
+        #print "Connection Timed Out"
+        # Terminate foo
+        gstatus.value = 0
+        p.terminate()
+        p.join()
 
 
 def l2ping(phonemac):
@@ -80,8 +104,8 @@ def regping(ping):
 
     txt = str(ping)
 
-    re1 = '.*?'	 # Non-greedy match on filler
-    re2 = '( 1 received)'	 # Command Seperated Values 1
+    re1 = '.*?'     # Non-greedy match on filler
+    re2 = '( 1 received)'     # Command Seperated Values 1
 
     rg = re.compile(re1 + re2, re.IGNORECASE | re.DOTALL)
     m = rg.search(txt)
@@ -111,7 +135,7 @@ def db_gone(keyid, prestatus):
         # Mark them as gone
         #print "key = %d" % keyid
         #c.execute("SELECT * FROM gone")
-	# Also mark them as not being last
+        # Also mark them as not being last
         c.execute("UPDATE gone SET Last = 0 WHERE key = %d" % keyid)
         c.execute("UPDATE gone SET Status = 0 WHERE key = %d" % keyid)
         conn.commit()  # commit changes to the db
@@ -139,7 +163,10 @@ def db_here(keyid, prestatus):
 
 #Main loop
 if __name__ == '__main__':
-    counter = 0
+    # Set up shared status variable
+    gstatus = multiprocessing.Value('i', 0)
+    #pool = multiprocessing.Pool(processes=1)
+    #counter = 0
     #Loop for awhile
     while True:
         c.execute("SELECT * FROM gone")
@@ -151,10 +178,19 @@ if __name__ == '__main__':
             #print "MAC = %s" % row[5]
             #print "Name = %s" % row[4]
             #status = l2ping(row[5])  # ping the MAC, get status
-            status = newping(row[5])  # ping the MAC, get status
+            #p = multiprocessing.Process(target = newping, name = "Ping", args=(row[5])
+            #status = newping(row[5])  # ping the MAC, get status
+            pingtimer(row[5])
+            #try:
+                #result = pool.apply_async(newping, [row[5]])
+                #status = result.get(timeout=2)
+                #print status
+            #except multiprocessing.TimeoutError:
+                #print "too slow"
+                #status = 0
             # 1 is here, 0 is gone or error
             #print "status is %s" % status
-            if status == 1:
+            if gstatus.value == 1:
                 #print "They're here!"
                 print "\033[94m %s is Here \033[00m" % row[4]
                 # Send the row to db_here
@@ -167,5 +203,5 @@ if __name__ == '__main__':
                 print "\033[91m %s is Not Here \033[00m" % row[4]
                 print " "
                 db_gone(row[0], row[2])
-        counter = counter + 1
+        #counter = counter + 1
         print "\033[33m Done \033[00m \n"
