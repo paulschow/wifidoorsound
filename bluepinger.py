@@ -15,15 +15,35 @@
 import sqlite3
 import subprocess
 import re
+import bluetooth
 
 # connect to the database
 conn = sqlite3.connect('macs.db')
 # the cursor is c
 c = conn.cursor()
 
+DEFAULT_TIMEOUT = 1
+
 #log = open('track1.txt', 'w')  # open a text file for logging
 #print log  # print what the log file is
 #log.write('Time,IP,Ping\n')  # write to log
+
+
+def newping(btaddr):
+# Adapted from
+# https://github.com/jeffbryner/bluetoothscreenlock
+    btsocket = bluetooth.BluetoothSocket(bluetooth.L2CAP)
+    print("searching for device...")
+    try:
+        btsocket.connect((btaddr, 3))
+        if btsocket.send("hey"):
+            print("found device..")
+            return 1
+            btsocket.close()
+    except bluetooth.btcommon.BluetoothError:
+        print("no device...")
+        return 0
+
 
 def l2ping(phonemac):
 # Bluetooth ping command
@@ -130,7 +150,8 @@ if __name__ == '__main__':
         for row in rows:
             #print "MAC = %s" % row[5]
             #print "Name = %s" % row[4]
-            status = l2ping(row[5])  # ping the MAC, get status
+            #status = l2ping(row[5])  # ping the MAC, get status
+            status = newping(row[5])  # ping the MAC, get status
             # 1 is here, 0 is gone or error
             #print "status is %s" % status
             if status == 1:
