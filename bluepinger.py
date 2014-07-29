@@ -55,6 +55,8 @@ def l2ping(phonemac):
 def regping(ping):
 # URL that generated this code:
 # http://txt2re.com
+# Uses regular expressions to look through l2ping result
+# This is pretty awful, but it works
 
     txt = str(ping)
 
@@ -89,6 +91,8 @@ def db_gone(keyid, prestatus):
         # Mark them as gone
         #print "key = %d" % keyid
         #c.execute("SELECT * FROM gone")
+	# Also mark them as not being last
+        c.execute("UPDATE gone SET Last = 0 WHERE key = %d" % keyid)
         c.execute("UPDATE gone SET Status = 0 WHERE key = %d" % keyid)
         conn.commit()  # commit changes to the db
         #print "Total number of rows updated :", conn.total_changes

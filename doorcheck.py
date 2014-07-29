@@ -17,7 +17,9 @@ GPIO.setmode(GPIO.BCM)
 GPIO.setup(14, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
 # connect to the database
-conn = sqlite3.connect('gone.db')
+# gone.db is for wifi
+# macs.db is for bluetooth
+conn = sqlite3.connect('macs.db')
 # the cursor is c
 c = conn.cursor()
 
