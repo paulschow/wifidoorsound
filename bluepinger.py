@@ -5,7 +5,7 @@
 
 # You have to pair the devices and add them to macs.db
 
-# Note: Requires sqlite3 I think
+# Note: Requires sqlite3 and python bluez
 
 #import os
 #import socket
@@ -17,6 +17,7 @@ import subprocess
 import re
 import bluetooth
 import multiprocessing
+import RPi.GPIO as GPIO
 
 
 # connect to the database
@@ -24,7 +25,10 @@ conn = sqlite3.connect('macs.db')
 # the cursor is c
 c = conn.cursor()
 
-DEFAULT_TIMEOUT = 1
+# Use BCM GPIO numbering
+GPIO.setmode(GPIO.BCM)
+# Status LED is in pin 15
+GPIO.setup(15, GPIO.OUT)
 
 #log = open('track1.txt', 'w')  # open a text file for logging
 #print log  # print what the log file is
@@ -57,10 +61,8 @@ def pingtimer(mac):
 # Maybe later I will use pools or something
     p = multiprocessing.Process(target=newping, name="ping", args=(mac,))
     p.start()
-    p.join(3)  # Timeout after seconds
+    p.join(4)  # Timeout after seconds
     #print result
-    # Wait 10 seconds for foo
-    #time.sleep(1)
     if p.is_alive():
         #print "Connection Timed Out"
         # Terminate foo
@@ -90,10 +92,6 @@ def l2ping(phonemac):
     #p = subprocess.Popen("date", stdout=subprocess.PIPE, shell=True)
     (ping, err) = p.communicate()
     return regping(ping)
-
-    #p.poll()
-    #print p.returncode
-    #print str(ping)
 
 
 def regping(ping):
@@ -139,6 +137,9 @@ def db_gone(keyid, prestatus):
         c.execute("UPDATE gone SET Last = 0 WHERE key = %d" % keyid)
         c.execute("UPDATE gone SET Status = 0 WHERE key = %d" % keyid)
         conn.commit()  # commit changes to the db
+        # Turn the LED
+        print "LED OFF"
+        GPIO.output(15, GPIO. LOW)
         #print "Total number of rows updated :", conn.total_changes
 
 
@@ -152,6 +153,9 @@ def db_here(keyid, prestatus):
         c.execute("UPDATE gone SET Last = 0 WHERE key != %d" % keyid)
         # Set them as the last person
         c.execute("UPDATE gone SET Last = 1 WHERE key = %d" % keyid)
+        # Turn on LED
+        print "LED %d ON" % (15)
+        GPIO.output(15, GPIO. HIGH)
         conn.commit()  # commit changes to the db
     else:
         print "They were already here"
@@ -178,18 +182,8 @@ if __name__ == '__main__':
             #print "MAC = %s" % row[5]
             #print "Name = %s" % row[4]
             #status = l2ping(row[5])  # ping the MAC, get status
-            #p = multiprocessing.Process(target = newping, name = "Ping", args=(row[5])
             #status = newping(row[5])  # ping the MAC, get status
-            pingtimer(row[5])
-            #try:
-                #result = pool.apply_async(newping, [row[5]])
-                #status = result.get(timeout=2)
-                #print status
-            #except multiprocessing.TimeoutError:
-                #print "too slow"
-                #status = 0
-            # 1 is here, 0 is gone or error
-            #print "status is %s" % status
+            pingtimer(row[5])  # ping the MAC, get status
             if gstatus.value == 1:
                 #print "They're here!"
                 print "\033[94m %s is Here \033[00m" % row[4]
