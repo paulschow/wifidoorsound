@@ -23,9 +23,8 @@
 # sudo nohup python doorcheck.py &
 
 import sqlite3
-from pygame import mixer
-from pygame import time
-#import time
+import pygame
+import time
 import RPi.GPIO as GPIO
 
 GPIO.setmode(GPIO.BCM)
@@ -41,7 +40,7 @@ conn = sqlite3.connect('macs.db')
 c = conn.cursor()
 
 # initalize pygame mixer for audio
-mixer.init()
+pygame.mixer.init()
 
 #counter = 0
 while True:
@@ -63,11 +62,11 @@ while True:
             c.execute("UPDATE gone SET Last = 0 WHERE key = %d" % keyid)
             conn.commit()  # commit changes to the db
 
-            mixer.music.load(row[3])  # load the file for the person
-            mixer.music.play()  # play the loaded file
+            pygame.mixer.music.load(row[3])  # load the file for the person
+            pygame.mixer.music.play()  # play the loaded file
             #time.sleep(10)
-            while mixer.music.get_busy():
-                time.Clock().tick(0)
+            while pygame.mixer.music.get_busy():
+                pygame.time.Clock().tick(0)
             print "Sound played! \n"
             #print counter
     except sqlite3.OperationalError:
@@ -86,11 +85,11 @@ while True:
             keyid = row[0]
             c.execute("UPDATE gone SET Last = 0 WHERE key = %d" % keyid)
             conn.commit()  # commit changes to the db
-            mixer.music.load(row[3])  # load the file for the person
-            mixer.music.play()  # play the loaded file
+            pygame.mixer.music.load(row[3])  # load the file for the person
+            pygame.mixer.music.play()  # play the loaded file
             #time.sleep(10)
-            while mixer.music.get_busy():
-                time.Clock().tick(0)
+            while pygame.mixer.music.get_busy():
+                pygame.time.Clock().tick(0)
             print "Sound played! \n"
             #print counter
 
