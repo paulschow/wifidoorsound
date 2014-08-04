@@ -14,5 +14,6 @@
 * Use a sqlite db editor to change the macs.db
 * Add their MAC addresses into macs.db with a song
 * Attach reed switch to GPIO pin 14
+* Optinally attach LED(s) to pin 15
 * Run bluepinger.py to start the pinging
 * Run doorcheck.py monitor the door
