@@ -28,7 +28,7 @@
 #import socket
 #import struct
 #import select
-#import time
+import time
 import sqlite3
 import subprocess
 import re
@@ -171,6 +171,7 @@ def db_here(keyid, prestatus):
         # Set them as the last person
         c.execute("UPDATE gone SET Last = 1 WHERE key = %d" % keyid)
         # Turn on LED
+        time.sleep(1)  # Hack to keep people from opening the door too fast
         print "LED %d ON" % (15)
         GPIO.output(15, GPIO. HIGH)
         conn.commit()  # commit changes to the db
