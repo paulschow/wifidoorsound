@@ -75,7 +75,7 @@ while True:
         # The database is in use
         print "\033[91m Error Excepted \033[00m"
         # Try again after half a second
-        time.sleep(0.5)
+        time.sleep(1)
         search = 1  # 1 is the last marker
         query = "SELECT * FROM gone WHERE last=? ORDER BY {0}".format('Last')
         c.execute(query, (search,))

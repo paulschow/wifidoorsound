@@ -70,7 +70,8 @@ def newping(btaddr):
             btsocket.close()
     except bluetooth.btcommon.BluetoothError:
         print("Bluetooth Error. Is device paired?")
-        gstatus.value = 0
+        #  Whatever, they're still there'
+        gstatus.value = 1
         return 0
 
 
@@ -80,7 +81,7 @@ def pingtimer(mac):
 # Maybe later I will use pools or something
     p = multiprocessing.Process(target=newping, name="ping", args=(mac,))
     p.start()
-    p.join(4)  # Timeout after seconds
+    p.join(4.2)  # Timeout after seconds
     #print result
     if p.is_alive():
         #print "Connection Timed Out"
