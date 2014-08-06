@@ -44,6 +44,8 @@ c = conn.cursor()
 
 # Use BCM GPIO numbering
 GPIO.setmode(GPIO.BCM)
+# Disable GPIO warnings
+GPIO.setwarnings(False)
 # Status LED is in pin 15
 GPIO.setup(15, GPIO.OUT)
 
@@ -177,6 +179,9 @@ def db_here(keyid, prestatus):
         conn.commit()  # commit changes to the db
     else:
         print "They were already here"
+        # Turn the LED
+        print "LED OFF"
+        GPIO.output(15, GPIO. LOW)
 
     #c.execute("SELECT * FROM gone")
     c.execute("UPDATE gone SET Status = 1 WHERE key = %d" % keyid)

@@ -17,7 +17,7 @@
 #along with this program; if not, write to the Free Software
 #Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-# doorcheck.py looks for the door opening by reading an infafred sensor
+# doorcheck.py looks for the door opening by reading a reed switch
 # it need to be run as sudo for GPIO access
 # I usually run this as:
 # sudo nohup python doorcheck.py &
@@ -28,7 +28,8 @@ import time
 import RPi.GPIO as GPIO
 
 GPIO.setmode(GPIO.BCM)
-
+# Disable GPIO warnings
+GPIO.setwarnings(False)
 # Set pin 14 as GPIO input with a pull up resistor
 GPIO.setup(14, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
@@ -49,6 +50,7 @@ while True:
     print "Waiting for sensor event"
     GPIO.wait_for_edge(14, GPIO.RISING)
     print '\033[1;32m Object Detected \033[00m'
+    time.sleep(0.5)  # Hack to fix not playing until door is closed
     try:
         search = 1  # 1 is the last marker
         query = "SELECT * FROM gone WHERE last=? ORDER BY {0}".format('Last')
