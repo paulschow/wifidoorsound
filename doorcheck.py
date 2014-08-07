@@ -43,7 +43,31 @@ c = conn.cursor()
 # initalize pygame mixer for audio
 pygame.mixer.init()
 
-#counter = 0
+
+# Function for playing music
+def playsong():
+    search = 1  # 1 is the last marker
+    query = "SELECT * FROM gone WHERE last=? ORDER BY {0}".format('Last')
+    c.execute(query, (search,))
+    for row in c:
+        #print row
+        print 'Last person was:', row[4]
+        print 'MP3 file is:', row[3]
+        # Remove their last person tag
+        keyid = row[0]
+        c.execute("UPDATE gone SET Last = 0 WHERE key = %d" % keyid)
+        conn.commit()  # commit changes to the db
+
+        pygame.mixer.music.load(row[3])  # load the file for the person
+        pygame.mixer.music.play()  # play the loaded file
+
+        # Check to see if the song is playing and let it play
+        while pygame.mixer.music.get_busy():
+            pygame.time.Clock().tick(0)
+        print "Sound played! \n"
+
+
+# Main Loop
 while True:
     # Get the current hour
     # 24 hour format
@@ -56,53 +80,25 @@ while True:
         print "Waiting for sensor event"
         GPIO.wait_for_edge(14, GPIO.RISING)
         print '\033[1;32m Object Detected \033[00m'
-        time.sleep(0.5)  # Hack to fix not playing until door is closed
+        time.sleep(0.1)  # Hack to fix not playing until door is closed
         try:
-            search = 1  # 1 is the last marker
-            query = "SELECT * FROM gone WHERE last=? ORDER BY {0}".format('Last')
-            c.execute(query, (search,))
-            for row in c:
-                #print row
-                print 'Last person was:', row[4]
-                print 'MP3 file is:', row[3]
-                # Remove their last person tag
-                keyid = row[0]
-                c.execute("UPDATE gone SET Last = 0 WHERE key = %d" % keyid)
-                conn.commit()  # commit changes to the db
-
-                pygame.mixer.music.load(row[3])  # load the file for the person
-                pygame.mixer.music.play()  # play the loaded file
-                #time.sleep(10)
-                while pygame.mixer.music.get_busy():
-                    pygame.time.Clock().tick(0)
-                print "Sound played! \n"
-                #print counter
+            # Play the song
+            playsong()
         except sqlite3.OperationalError:
             # The database is in use
             print "\033[91m Error Excepted \033[00m"
             # Try again after a second
             time.sleep(1)
-            search = 1  # 1 is the last marker
-            query = "SELECT * FROM gone WHERE last=? ORDER BY {0}".format('Last')
-            c.execute(query, (search,))
-            for row in c:
-                #print row
-                print 'Last person was:', row[4]
-                print 'MP3 file is:', row[3]
-                # Remove their last person tag
-                keyid = row[0]
-                c.execute("UPDATE gone SET Last = 0 WHERE key = %d" % keyid)
-                conn.commit()  # commit changes to the db
-                pygame.mixer.music.load(row[3])  # load the file for the person
-                pygame.mixer.music.play()  # play the loaded file
-                #time.sleep(10)
-                while pygame.mixer.music.get_busy():
-                    pygame.time.Clock().tick(0)
-                print "Sound played! \n"
-                #print counter
+            playsong()
+        except:
+            # Some other error
+            # Wait 10 seconds then start over
+            print "Error"
+            time.sleep(10)
     else:
         print "It's too late"
         # Check the time every 5 minutes
         time.sleep(300)
+        #TODO add logging
 
 GPIO.cleanup()
