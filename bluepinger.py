@@ -24,10 +24,6 @@
 
 # Note: Requires sqlite3 and python bluez
 
-#import os
-#import socket
-#import struct
-#import select
 import time
 import sqlite3
 import subprocess
@@ -53,6 +49,14 @@ GPIO.setup(15, GPIO.OUT)
 #print log  # print what the log file is
 #log.write('Time,IP,Ping\n')  # write to log
 
+# Set up shared status variable
+gstatus = multiprocessing.Value('i', 0)
+
+c.execute("SELECT * FROM gone")
+rows = c.fetchall()
+countrow = len(rows)  # Counts the number of rows
+print "Number of Rows:", countrow
+
 
 def newping(btaddr):
 # Adapted from
@@ -70,7 +74,8 @@ def newping(btaddr):
             btsocket.close()
     except bluetooth.btcommon.BluetoothError:
         print("Bluetooth Error. Is device paired?")
-        #  Whatever, they're still there'
+        # Whatever, they're still there
+        # Probably
         gstatus.value = 1
         return 0
 
@@ -79,12 +84,13 @@ def pingtimer(mac):
 # This is a pretty awful use of multiprocessing to time the pings
 # But it works pretty well
 # Maybe later I will use pools or something
+    print "Connecting..."
     p = multiprocessing.Process(target=newping, name="ping", args=(mac,))
     p.start()
-    p.join(4.2)  # Timeout after seconds
+    p.join(3)  # Timeout after seconds
     #print result
     if p.is_alive():
-        #print "Connection Timed Out"
+        print "Connection Timed Out"
         # Terminate foo
         gstatus.value = 0
         p.terminate()
@@ -92,7 +98,7 @@ def pingtimer(mac):
 
 
 def l2ping(phonemac):
-# Bluetooth ping command
+# Old Bluetooth ping command
 # Uses l2ping linux command
 # Returns a 0 if mac is gone
 # Returns a 1 if mac is here
@@ -189,37 +195,31 @@ def db_here(keyid, prestatus):
     conn.commit()  # commit changes to the db
     #print "Total number of rows updated :", conn.total_changes
 
+
 #Main loop
-if __name__ == '__main__':
-    # Set up shared status variable
-    gstatus = multiprocessing.Value('i', 0)
-    #pool = multiprocessing.Pool(processes=1)
-    #counter = 0
-    #Loop for awhile
-    while True:
-        c.execute("SELECT * FROM gone")
-        rows = c.fetchall()
-        countrow = len(rows)  # Counts the number of rows
-        print "Number of Rows:", countrow
-        x = countrow
-        for row in rows:
-            #print "MAC = %s" % row[5]
-            #print "Name = %s" % row[4]
-            #status = l2ping(row[5])  # ping the MAC, get status
-            #status = newping(row[5])  # ping the MAC, get status
-            pingtimer(row[5])  # ping the MAC, get status
-            if gstatus.value == 1:
-                #print "They're here!"
-                print "\033[94m %s is Here \033[00m" % row[4]
-                # Send the row to db_here
-                db_here(row[0], row[2])
-                print " "
-                #print "Total number of rows updated :", conn.total_changes
-            else:
-                #print "Not Here"
-                # Send the row to db_gone
-                print "\033[91m %s is Not Here \033[00m" % row[4]
-                print " "
-                db_gone(row[0], row[2])
-        #counter = counter + 1
-        print "\033[33m Done \033[00m \n"
+while True:
+    #c.execute("SELECT * FROM gone")
+    #rows = c.fetchall()
+    #countrow = len(rows)  # Counts the number of rows
+    #print "Number of Rows:", countrow
+    for row in rows:
+        #print "MAC = %s" % row[5]
+        #print "Name = %s" % row[4]
+        #status = l2ping(row[5])  # ping the MAC, get status
+        #status = newping(row[5])  # ping the MAC, get status
+        pingtimer(row[5])  # ping the MAC, get status
+        if gstatus.value == 1:
+            #print "They're here!"
+            print "\033[94m %s is Here \033[00m" % row[4]
+            # Send the row to db_here
+            db_here(row[0], row[2])
+            print " "
+            #print "Total number of rows updated :", conn.total_changes
+        else:
+            #print "Not Here"
+            # Send the row to db_gone
+            print "\033[91m %s is Not Here \033[00m" % row[4]
+            print " "
+            db_gone(row[0], row[2])
+    #counter = counter + 1
+    print "\033[33m Done \033[00m \n"
