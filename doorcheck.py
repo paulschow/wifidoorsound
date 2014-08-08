@@ -67,38 +67,39 @@ def playsong():
         print "Sound played! \n"
 
 
-# Main Loop
-while True:
+def timecheck():
     # Get the current hour
     # 24 hour format
     hour = time.localtime()[3]
     print "Hour is", hour
-    # If it is too early or too late, don't play music
     if 8 < hour < 22:
-        # Wait for the rising edge
-        # AKA detect when something gets too close
-        print "Waiting for sensor event"
-        GPIO.wait_for_edge(14, GPIO.RISING)
-        print '\033[1;32m Object Detected \033[00m'
-        time.sleep(0.1)  # Hack to fix not playing until door is closed
-        try:
-            # Play the song
-            playsong()
-        except sqlite3.OperationalError:
-            # The database is in use
-            print "\033[91m Error Excepted \033[00m"
-            # Try again after a second
-            time.sleep(1)
-            playsong()
-        except:
-            # Some other error
-            # Wait 10 seconds then start over
-            print "Error"
-            time.sleep(10)
+        playsong()
     else:
         print "It's too late"
-        # Check the time every 5 minutes
-        time.sleep(300)
-        #TODO add logging
+
+
+# Main Loop
+while True:
+    # Wait for the rising edge
+    # AKA detect when something gets too close
+    print "Waiting for sensor event"
+    GPIO.wait_for_edge(14, GPIO.RISING)
+    print '\033[1;32m Object Detected \033[00m'
+    time.sleep(0.1)  # Hack to fix not playing until door is closed
+    try:
+        # Play the song
+        timecheck()
+    except sqlite3.OperationalError:
+        # The database is in use
+        print "\033[91m Error Excepted \033[00m"
+        # Try again after a second
+        time.sleep(1)
+        timecheck()
+    except:
+        # Some other error
+        # Wait 10 seconds then start over
+        print "Error"
+        time.sleep(10)
+
 
 GPIO.cleanup()
