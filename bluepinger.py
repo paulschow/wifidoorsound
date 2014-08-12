@@ -102,20 +102,12 @@ def l2ping(phonemac):
 # Uses l2ping linux command
 # Returns a 0 if mac is gone
 # Returns a 1 if mac is here
-# This takes ~5 seconds per device, there's probably a better way
-# Probably takes even longer on rpi
-    #p = os.popen("sudo l2ping -t 1 -c 1 E8:99:C4:D8:C9:91")
-    #subprocess.call("ls")
-    #ping = p.read()
-    #print ping
-    #subprocess.call("l2ping")
-    #phonemac = "E8:99:C4:D8:C9:91"
+# This takes ~5 seconds per device, there's a better way
     p = subprocess.Popen(["sudo", "l2ping", "-t 1", "-c 1", phonemac],
     stdout=subprocess.PIPE)
     # run the l2ping (bluetooth ping) command for phonemac
     # with timeout 1 second
     # and count 1 (a single ping)
-    #p = subprocess.Popen("date", stdout=subprocess.PIPE, shell=True)
     (ping, err) = p.communicate()
     return regping(ping)
 
@@ -198,10 +190,6 @@ def db_here(keyid, prestatus):
 
 #Main loop
 while True:
-    #c.execute("SELECT * FROM gone")
-    #rows = c.fetchall()
-    #countrow = len(rows)  # Counts the number of rows
-    #print "Number of Rows:", countrow
     for row in rows:
         #print "MAC = %s" % row[5]
         #print "Name = %s" % row[4]
@@ -221,5 +209,4 @@ while True:
             print "\033[91m %s is Not Here \033[00m" % row[4]
             print " "
             db_gone(row[0], row[2])
-    #counter = counter + 1
     print "\033[33m Done \033[00m \n"
