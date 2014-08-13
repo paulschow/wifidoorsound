@@ -5,7 +5,7 @@
 
 * Wifi fork of Doorsound
 * Uses wifi to tell when someone gets home, then plays a sound when they walk in the door
-* (https://github.com/paulschow/doorsound)[https://github.com/paulschow/doorsound]
+* [https://github.com/paulschow/doorsound](https://github.com/paulschow/doorsound)
 
 ### How do I get set up? ###
 
